@@ -1,0 +1,139 @@
+services:
+
+  # ============================================================
+  # BASES DE DATOS (MySQL independientes por microservicio)
+  # ============================================================
+
+  db-inventario:
+    image: mysql:8.0
+    container_name: smartlogix_db_inventario
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: inventario_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - vol_inventario:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-pedidos:
+    image: mysql:8.0
+    container_name: smartlogix_db_pedidos
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: pedidos_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: password
+    ports:
+      - "3308:3306"
+    volumes:
+      - vol_pedidos:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-ppassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # BACKEND A — Microservicio de Inventario (Spring Boot)
+  # ============================================================
+
+  inventario-service:
+    build:
+      context: ./inventario-service
+      dockerfile: Dockerfile
+    container_name: smartlogix_inventario
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-inventario:3306/inventario_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+    depends_on:
+      db-inventario:
+        condition: service_healthy
+    restart: on-failure
+
+  # ============================================================
+  # BACKEND B — Microservicio de Pedidos (Node.js / Express)
+  # ============================================================
+
+  pedidos-service:
+    build:
+      context: ./pedidos-service
+      dockerfile: Dockerfile
+    container_name: smartlogix_pedidos
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: 8082
+      DB_HOST: db-pedidos
+      DB_PORT: 3306
+      DB_NAME: pedidos_db
+      DB_USER: admin
+      DB_PASSWORD: password
+    depends_on:
+      db-pedidos:
+        condition: service_healthy
+    restart: on-failure
+
+  # ============================================================
+  # FRONTEND — React / Vite
+  # ============================================================
+
+  client-web:
+    build:
+      context: ./client-web
+      dockerfile: Dockerfile
+    container_name: smartlogix_frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - inventario-service
+      - pedidos-service
+
+  # ============================================================
+  # INFRAESTRUCTURA HEREDADA (Kafka + Zookeeper — demo legacy)
+  # ============================================================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: smartlogix_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: smartlogix_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: smartlogix_kafdrop
+    depends_on:
+      - kafka
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: kafka:29092
+
+volumes:
+  vol_inventario:
+  vol_pedidos:
