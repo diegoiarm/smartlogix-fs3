@@ -3,7 +3,7 @@ import mysql from 'mysql2/promise';
 
 const router = Router();
 
-// Pool de conexiones — patrón del profesor
+// Pool de conexiones 
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT) || 3306,

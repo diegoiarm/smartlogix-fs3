@@ -84,6 +84,26 @@ services:
     restart: on-failure
 
   # ============================================================
+  # BFF — Backend For Frontend (agrega inventario + pedidos)
+  # ============================================================
+
+  bff-service:
+    build:
+      context: ./bff-service
+      dockerfile: Dockerfile
+    container_name: smartlogix_bff
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      INVENTARIO_URL: http://inventario-service:8081
+      PEDIDOS_URL: http://pedidos-service:8082
+    depends_on:
+      - inventario-service
+      - pedidos-service
+    restart: on-failure
+
+  # ============================================================
   # FRONTEND — React / Vite
   # ============================================================
 
@@ -95,8 +115,7 @@ services:
     ports:
       - "5173:80"
     depends_on:
-      - inventario-service
-      - pedidos-service
+      - bff-service
 
   # ============================================================
   # INFRAESTRUCTURA HEREDADA (Kafka + Zookeeper — demo legacy)

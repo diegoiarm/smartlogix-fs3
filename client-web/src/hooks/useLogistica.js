@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import NotificacionService from '../services/NotificacionService';
 
-const INVENTARIO_URL = 'http://localhost:8081/api/inventario';
-const PEDIDOS_URL    = 'http://localhost:8082/api/pedidos';
+const BFF_URL        = 'http://localhost:3000/api/bff';
+const INVENTARIO_URL = `${BFF_URL}/inventario`;
+const PEDIDOS_URL    = `${BFF_URL}/pedidos`;
 
 /**
  * Hook personalizado — Módulo de lógica de logística.
