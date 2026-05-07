@@ -1,0 +1,324 @@
+{
+  "info": {
+    "name": "SmartLogix API",
+    "_postman_id": "smartlogix-fs3-collection",
+    "description": "Colección de pruebas para SmartLogix: inventario-service, pedidos-service y BFF.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "inventario_url", "value": "http://localhost:8081", "type": "string" },
+    { "key": "pedidos_url",    "value": "http://localhost:8082", "type": "string" },
+    { "key": "bff_url",        "value": "http://localhost:3000", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🟢 Health Checks",
+      "item": [
+        {
+          "name": "Inventario — Health",
+          "request": {
+            "method": "GET",
+            "url": "{{inventario_url}}/actuator/health",
+            "description": "Verifica que inventario-service esté UP. Espera: {\"status\":\"UP\"}"
+          }
+        },
+        {
+          "name": "Pedidos — Health",
+          "request": {
+            "method": "GET",
+            "url": "{{pedidos_url}}/health",
+            "description": "Verifica que pedidos-service esté UP."
+          }
+        },
+        {
+          "name": "BFF — Health",
+          "request": {
+            "method": "GET",
+            "url": "{{bff_url}}/health",
+            "description": "Verifica que bff-service esté UP."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📦 Inventario Service (directo :8081)",
+      "item": [
+        {
+          "name": "GET — Listar stock",
+          "request": {
+            "method": "GET",
+            "url": "{{inventario_url}}/api/inventario",
+            "description": "Retorna todos los items del inventario."
+          }
+        },
+        {
+          "name": "POST — Crear producto ESTANDAR",
+          "request": {
+            "method": "POST",
+            "url": "{{inventario_url}}/api/inventario",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Caja Cartón\",\n  \"precio\": 5.99,\n  \"cantidad\": 100,\n  \"tipo\": \"ESTANDAR\"\n}"
+            },
+            "description": "Crea un producto estándar con 100 unidades."
+          }
+        },
+        {
+          "name": "POST — Crear producto FRAGIL (stock bajo)",
+          "request": {
+            "method": "POST",
+            "url": "{{inventario_url}}/api/inventario",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Vidrio Premium\",\n  \"precio\": 25.00,\n  \"cantidad\": 2,\n  \"tipo\": \"FRAGIL\"\n}"
+            },
+            "description": "Crea un producto frágil con cantidad baja para disparar la alerta de stock bajo."
+          }
+        },
+        {
+          "name": "POST — Crear producto PERECIBLE",
+          "request": {
+            "method": "POST",
+            "url": "{{inventario_url}}/api/inventario",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Leche UHT\",\n  \"precio\": 1.50,\n  \"cantidad\": 50,\n  \"tipo\": \"PERECIBLE\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT — Actualizar producto (id: 1)",
+          "request": {
+            "method": "PUT",
+            "url": "{{inventario_url}}/api/inventario/1",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Caja Cartón Grande\",\n  \"precio\": 7.50,\n  \"cantidad\": 80,\n  \"tipo\": \"ESTANDAR\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET — Alertas de stock bajo",
+          "request": {
+            "method": "GET",
+            "url": "{{inventario_url}}/api/inventario/alerta/stock-bajo",
+            "description": "Debe retornar los productos donde cantidad <= stockMinimo. Debe incluir 'Vidrio Premium'."
+          }
+        },
+        {
+          "name": "GET — Listar categorías",
+          "request": {
+            "method": "GET",
+            "url": "{{inventario_url}}/api/categorias",
+            "description": "Tabla nueva: categorias. Debe retornar []."
+          }
+        },
+        {
+          "name": "POST — Crear categoría",
+          "request": {
+            "method": "POST",
+            "url": "{{inventario_url}}/api/categorias",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Almacenamiento\",\n  \"descripcion\": \"Productos para bodega y almacenamiento\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE — Eliminar producto (id: 1)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{inventario_url}}/api/inventario/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚚 Pedidos Service (directo :8082)",
+      "item": [
+        {
+          "name": "GET — Listar pedidos",
+          "request": {
+            "method": "GET",
+            "url": "{{pedidos_url}}/api/pedidos"
+          }
+        },
+        {
+          "name": "POST — Crear pedido",
+          "request": {
+            "method": "POST",
+            "url": "{{pedidos_url}}/api/pedidos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Juan Pérez\",\n  \"producto\": \"Caja Cartón\",\n  \"cantidad\": 3\n}"
+            },
+            "description": "Crea un pedido. Estado inicial: PENDIENTE."
+          }
+        },
+        {
+          "name": "GET — Obtener pedido (id: 1)",
+          "request": {
+            "method": "GET",
+            "url": "{{pedidos_url}}/api/pedidos/1"
+          }
+        },
+        {
+          "name": "PUT — Cambiar estado → EN_RUTA (id: 1)",
+          "request": {
+            "method": "PUT",
+            "url": "{{pedidos_url}}/api/pedidos/1/estado",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_RUTA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT — Cambiar estado → ENTREGADO (id: 1)",
+          "request": {
+            "method": "PUT",
+            "url": "{{pedidos_url}}/api/pedidos/1/estado",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"ENTREGADO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT — Estado inválido (debe dar 400)",
+          "request": {
+            "method": "PUT",
+            "url": "{{pedidos_url}}/api/pedidos/1/estado",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"INVENTADO\"\n}"
+            },
+            "description": "Debe retornar 400 con mensaje de error."
+          }
+        },
+        {
+          "name": "DELETE — Eliminar pedido (id: 1)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{pedidos_url}}/api/pedidos/1"
+          }
+        },
+        {
+          "name": "GET — Listar clientes",
+          "request": {
+            "method": "GET",
+            "url": "{{pedidos_url}}/api/clientes",
+            "description": "Tabla nueva: clientes. Debe retornar []."
+          }
+        },
+        {
+          "name": "POST — Crear cliente",
+          "request": {
+            "method": "POST",
+            "url": "{{pedidos_url}}/api/clientes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"María García\",\n  \"email\": \"maria@test.com\",\n  \"telefono\": \"099123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST — Email duplicado (debe dar 409)",
+          "request": {
+            "method": "POST",
+            "url": "{{pedidos_url}}/api/clientes",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Otro Usuario\",\n  \"email\": \"maria@test.com\"\n}"
+            },
+            "description": "Debe retornar 409 Conflict porque el email ya existe."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔀 BFF Service (via :3000) — EVALUACIÓN",
+      "item": [
+        {
+          "name": "GET — Inventario via BFF",
+          "request": {
+            "method": "GET",
+            "url": "{{bff_url}}/api/bff/inventario",
+            "description": "El BFF llama internamente a inventario-service:8081 y retorna la respuesta."
+          }
+        },
+        {
+          "name": "POST — Crear stock via BFF",
+          "request": {
+            "method": "POST",
+            "url": "{{bff_url}}/api/bff/inventario",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Pallets\",\n  \"precio\": 15.00,\n  \"cantidad\": 30,\n  \"tipo\": \"ESTANDAR\"\n}"
+            },
+            "description": "El frontend NUNCA llama directo al micro — pasa por el BFF."
+          }
+        },
+        {
+          "name": "GET — Pedidos via BFF",
+          "request": {
+            "method": "GET",
+            "url": "{{bff_url}}/api/bff/pedidos"
+          }
+        },
+        {
+          "name": "POST — Crear pedido via BFF",
+          "request": {
+            "method": "POST",
+            "url": "{{bff_url}}/api/bff/pedidos",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Ana López\",\n  \"producto\": \"Pallets\",\n  \"cantidad\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT — Cambiar estado via BFF (id: 1)",
+          "request": {
+            "method": "PUT",
+            "url": "{{bff_url}}/api/bff/pedidos/1/estado",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"EN_RUTA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET — Dashboard (inventario + pedidos + alertas)",
+          "request": {
+            "method": "GET",
+            "url": "{{bff_url}}/api/bff/dashboard",
+            "description": "Endpoint clave del BFF: agrega inventario-service Y pedidos-service en una sola respuesta. Debe retornar { inventario: [...], pedidos: [...], alertas: [...] }"
+          }
+        },
+        {
+          "name": "GET — BFF con micro caído (simular fallo)",
+          "request": {
+            "method": "GET",
+            "url": "{{bff_url}}/api/bff/inventario",
+            "description": "Para probar resiliencia: detener inventario-service con 'docker-compose stop inventario-service' y ejecutar esto. Debe retornar 502 con mensaje de error claro."
+          }
+        }
+      ]
+    }
+  ]
+}
